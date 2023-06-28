@@ -1,0 +1,32 @@
+# GitHub workflow Marketplace： https://github.com/marketplace
+
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    name: "Test on Node.js ${{ matrix.node-version }} ${{ matrix.os }}"
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [ 14, 16, 18 ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+      - name: setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: true
+
+      - uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: pnpm run test
