@@ -220,4 +220,4 @@ npm test
 
 ## License
 
-MIT License (http://nodaguti.mit-license.org/)
+[MIT License](https://github.com/fengma1992/textlint-rule-alive-link/blob/master/LICENSE)
