@@ -95,6 +95,16 @@ function isIgnored(uri, ignore = []) {
 }
 
 /**
+ * Check if URI have protocol
+ * @description Some URIs' protocol in HTML is removed. Like: //google.com instead of https://google.com
+ * @param {string} uri
+ * @return {boolean}
+ */
+function checkProtocol(uri) {
+  return /^\/\//.test(uri)
+}
+
+/**
  * wait for ms and resolve the promise
  * @param ms
  * @returns {Promise<any>}
@@ -290,35 +300,41 @@ const reporter = (context, options) => {
     }
     const URIRange = [index, index + uri.length]
     let newURI = uri
+    let result = null
 
     if (isRelative(uri)) {
-      if (!ruleOptions.checkRelative) {
+      // Check if there is just no protocol ahead
+      if (checkProtocol(uri)) {
+        newURI = `https:${uri}`
+      } else {
+        if (!ruleOptions.checkRelative) {
+          return
+        }
+        const filePath = getFilePath()
+        // Treat relative uri as local file path if ruleOptions.baseURI is not provided
+        const base = ruleOptions.baseURI || filePath
+        if (!base) {
+          const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
+          report(node, new RuleError(message, { padding: locator.range(URIRange) }))
+          return
+        }
+
+        newURI = URL.resolve(base, uri)
+      }
+    }
+
+    if (isLocal(newURI)) {
+      result = await isAliveLocalFile(newURI)
+    } else {
+      // Ignore non http external link
+      if (!isHttp(newURI)) {
         return
       }
 
-      const filePath = getFilePath()
-      const base = ruleOptions.baseURI || filePath
-      if (!base) {
-        const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
-
-        report(node, new RuleError(message, { padding: locator.range(URIRange) }))
-        return
-      }
-
-      newURI = URL.resolve(base, uri)
+      // Determine request method
+      const method = ruleOptions.preferGET.includes(getURLOrigin(newURI)) ? 'GET' : 'HEAD'
+      result = await memorizedIsAliveURI(newURI, method, maxRetryCount)
     }
-
-    const isLocalURI = isLocal(newURI)
-
-    // Ignore non http external link
-    if (!isLocalURI && !isHttp(newURI)) {
-      return
-    }
-
-    // Determine request method
-    const method = ruleOptions.preferGET.includes(getURLOrigin(newURI)) ? 'GET' : 'HEAD'
-
-    const result = isLocalURI ? await isAliveLocalFile(newURI) : await memorizedIsAliveURI(newURI, method, maxRetryCount)
 
     const { ok, redirected, redirectTo, message } = result
     // When ignoreRedirects is true, redirected should be ignored

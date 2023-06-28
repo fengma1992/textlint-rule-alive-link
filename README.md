@@ -50,7 +50,8 @@ In this case, we have to somehow resolve the relative URIs and convert them into
 
 The resolution strategy is as follows:
 
-1. If `baseURI` is specified, use that path to resolve relative URIs (See the below section for details).
+1. if the URI is like `//example.com`, the rule check `https://example.com` instead. 
+2. If `baseURI` is specified, use that path to resolve relative URIs (See the below section for details).
 2. If not, try to get the path of the file being linted and use its parent folder as the base path.
 3. If that's not available (e.g., when you are performing linting from API), put an error `Unable to resolve the relative URI`.
 

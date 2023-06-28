@@ -14,6 +14,7 @@ tester.run('alive-link', rule, {
     'should be able to check a link in Markdown: [example](https://dev.mysql.com/downloads/mysql/)',
     'should be able to check an image link in Markdown: ![image example](https://example.com/)',
     'should be able to check a URL in Markdown: https://example.com/',
+    'should be able to check a URL without protocol as https URL: //example.com/',
     'should success with retrying on error: [npm results for textlint](https://www.npmjs.com/search?q=textlint)',
     'should treat 200 OK as alive: https://httpstat.us/200',
     'should treat 200 OK. It require User-Agent: Navigate to [MySQL distribution](https://dev.mysql.com/downloads/mysql/) to install MySQL `5.7`.',
