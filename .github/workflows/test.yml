@@ -23,7 +23,10 @@ jobs:
         id: pnpm-install
         with:
           version: 7
-          run_install: true
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
 
       - uses: nick-fields/retry@v2
         with:
