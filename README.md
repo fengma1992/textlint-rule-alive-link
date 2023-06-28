@@ -9,7 +9,7 @@ to make sure every link in a document is available.
 
 The targets of this rule is Markdown documents and plain text documents (See tests).
 
-This rule is mainly adopted from [textlint-rule-no-dead-link](https://github.com/textlint-rule/textlint-rule-no-dead-link) with some modifications.
+This rule is mainly adopted from [textlint-rule-no-dead-link](https://github.com/textlint-rule/textlint-rule-no-dead-link) but much more faster and more features provided.
 
 ## Installation
 
@@ -50,10 +50,10 @@ In this case, we have to somehow resolve the relative URIs and convert them into
 
 The resolution strategy is as follows:
 
-1. if the URI is like `//example.com`, the rule check `https://example.com` instead. 
+1. If the URI is like `//example.com`, the rule check `https://example.com` instead. 
 2. If `baseURI` is specified, use that path to resolve relative URIs (See the below section for details).
-2. If not, try to get the path of the file being linted and use its parent folder as the base path.
-3. If that's not available (e.g., when you are performing linting from API), put an error `Unable to resolve the relative URI`.
+3. If not, try to get the path of the file being linted and use its parent folder as the base path.
+4. If that's not available (e.g., when you are performing linting from API), put an error `Unable to resolve the relative URI`.
 
 ### URI matching in plain text
 
