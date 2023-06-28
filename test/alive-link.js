@@ -172,7 +172,7 @@ tester.run('alive-link', rule, {
       text: 'should throw when a relative URI cannot be resolved: [test](./a.md).',
       errors: [
         {
-          message: 'Unable to resolve the relative URI. Please check if the base URI is correctly specified.',
+          message: 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.',
           line: 1,
           column: 61,
         },
