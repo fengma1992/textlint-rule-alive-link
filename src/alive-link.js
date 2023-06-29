@@ -26,7 +26,10 @@ const DEFAULT_OPTIONS = {
 
 const URI_REGEXP = /(?:https?:)?\/\/(?:www\.)?[-a-z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-\p{L}0-9()@:%_+.~#?&/=]*)/gu
 
-const REDIRECT_STATUS_CODE = [301, 302, 303, 307, 308]
+const STATUS_CODE = {
+  NOT_ALLOWED: 405,
+  REDIRECT: [301, 302, 303, 307, 308],
+}
 
 /**
  * Return URL origin string from `urlString`.
@@ -87,7 +90,7 @@ function isLocal(uri) {
  * @returns {boolean}
  */
 function isRedirect(code) {
-  return REDIRECT_STATUS_CODE.includes(code)
+  return STATUS_CODE.REDIRECT.includes(code)
 }
 
 function isIgnored(uri, ignore = []) {
@@ -102,6 +105,35 @@ function isIgnored(uri, ignore = []) {
  */
 function checkProtocol(uri) {
   return /^\/\//.test(uri)
+}
+
+/**
+ * Join multiple path
+ * @param {[string]} pathList
+ * @return {string}
+ */
+function joinPath(pathList) {
+  const list = pathList.map((path, index) => {
+    let temp = path
+    if (!path) {
+      return ''
+    }
+    // Remove tail '/'
+    if (path[path.length - 1] === '/') {
+      temp = temp.slice(0, -1)
+    }
+    // remove head '/', except first path
+    if (index > 0 && path[0] === '/') {
+      temp = temp.slice(1)
+    }
+    return temp
+  })
+
+  const result = list.filter(Boolean).join('/')
+  if (result.startsWith('http')) {
+    return result
+  }
+  return result
 }
 
 /**
@@ -210,11 +242,15 @@ const createCheckAliveURL = (ruleOptions) => {
 
       // Retry available
       if (currentRetryCount < maxRetryCount) {
-        // Retry using 'GET' method if it is not ok when use 'HEAD' method
-        if (method === 'HEAD') {
-          return isAliveURI(uri, 'GET', maxRetryCount, currentRetryCount + 1)
+        // If current method is not allowed, switch to the allowed method
+        if (res.status === STATUS_CODE.NOT_ALLOWED) {
+          method = res.headers.get('Allow') || 'GET'
+        } else {
+          // Retry using 'GET' method if it is not ok when use 'HEAD' method
+          method = 'GET'
         }
 
+        let delayMs = 0
         // Try to fetch again if not reach max retry count
         const retryAfter = res.headers.get('Retry-After')
         // The response `Retry-After` header has a higher priority
@@ -222,19 +258,19 @@ const createCheckAliveURL = (ruleOptions) => {
         if (retryAfter) {
           const retryAfterMs = Number(retryAfter) * 1000
           const maxRetryAfterDelayMs = ruleOptions.maxRetryAfterDelay * 1000
-          if (retryAfterMs <= maxRetryAfterDelayMs) {
-            await waitTimeMs(retryAfterMs)
-          }
+          delayMs = Math.min(retryAfterMs, maxRetryAfterDelayMs)
         } else {
           // exponential retry: 0ms -> 100ms -> 200ms -> 400ms -> 800ms ...
           const retryWaitTimeMs = currentRetryCount ** 2 * 100
           const maxRetryDelayMs = ruleOptions.maxRetryDelay * 1000
-          if (retryWaitTimeMs <= maxRetryDelayMs) {
-            await waitTimeMs(retryWaitTimeMs)
-          }
-        }
 
-        return isAliveURI(uri, 'GET', maxRetryCount, currentRetryCount + 1)
+          delayMs = Math.min(retryWaitTimeMs, maxRetryDelayMs)
+        }
+        if (delayMs > 0) {
+          // Retry delay
+          await waitTimeMs(delayMs)
+        }
+        return isAliveURI(uri, method, maxRetryCount, currentRetryCount + 1)
       }
 
       return {
@@ -319,7 +355,7 @@ const reporter = (context, options) => {
           return
         }
 
-        newURI = URL.resolve(base, uri)
+        newURI = joinPath([base, uri])
       }
     }
 

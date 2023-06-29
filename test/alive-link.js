@@ -1,6 +1,7 @@
 import TextlintTester from 'textlint-tester'
 import fs from 'fs'
 import path from 'path'
+
 import rule from '../src/alive-link'
 
 const tester = new TextlintTester()

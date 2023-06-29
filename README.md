@@ -106,14 +106,26 @@ Examples:
 
 ```js
 "alive-link": {
-  "baseURI": "http://example.com/"
+  "baseURI": "https://example.com/subpath/"
 }
+
+// markdown content:
+// [page](/path/to/page)
+
+// parsed link:
+// https://example.com/subpath/path/to/page
 ```
 
 ```js
 "alive-link": {
   "baseURI": "/Users/textlint/path/to/parent/folder/"
 }
+
+// markdown content:
+// [file](/path/to/file1)
+
+// parsed link:
+// /Users/textlint/path/to/parent/folder/path/to/file
 ```
 
 ### ignore
@@ -137,9 +149,7 @@ Example:
 
 ### preferGET
 
-An array of [origins](https://url.spec.whatwg.org/#origin) to lets the rule connect to the origin's URL by `GET` instead of default `HEAD` request.
-
-Although the rule will fall back to `GET` method when `HEAD` request is failed (status code is not between 200 and 300), in order to shorten time to run your test, you can use this option when you are sure that target origin always returns 5xx for `HEAD` request.
+An array of [origins](https://url.spec.whatwg.org/#origin) to lets the rule connect to the origin's URL by `GET` instead of default `HEAD` request at first time.
 
 Example:
 
@@ -188,9 +198,14 @@ Example:
 
 ### retry
 
-This rule checks the url with retry.
+This rule checks the URL with retry.
 The default max retry count is `3`.
 Set smaller to save linting time as needed.
+
+Retry request method:
+
+1. by `Response Headers Allow` parameter if `statusCode` is `405`.
+2. `GET` as alternative.
 
 ### userAgent
 
