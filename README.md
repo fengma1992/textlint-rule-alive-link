@@ -102,18 +102,22 @@ The base URI to be used for resolving relative URIs.
 
 Though its name, you can pass either an URI starting with `http` or `https`, or an file path starting with `/`.
 
+This option uses `URL.resolve(baseURI, relativeURI)` method in node `url` module to join URIs.
+
 Examples:
 
 ```js
 "alive-link": {
-  "baseURI": "https://example.com/subpath/"
+  "baseURI": "https://example.com/path/"
 }
 
 // markdown content:
-// [page](/path/to/page)
+// [page1](/sub1/to/page1)
+// [page2](sub2/to/page2)
 
 // parsed link:
-// https://example.com/subpath/path/to/page
+// https://example.com/sub1/to/page1
+// https://example.com/path/sub2/to/page2
 ```
 
 ```js

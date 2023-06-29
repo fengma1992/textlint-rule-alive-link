@@ -108,35 +108,6 @@ function checkProtocol(uri) {
 }
 
 /**
- * Join multiple path
- * @param {[string]} pathList
- * @return {string}
- */
-function joinPath(pathList) {
-  const list = pathList.map((path, index) => {
-    let temp = path
-    if (!path) {
-      return ''
-    }
-    // Remove tail '/'
-    if (path[path.length - 1] === '/') {
-      temp = temp.slice(0, -1)
-    }
-    // remove head '/', except first path
-    if (index > 0 && path[0] === '/') {
-      temp = temp.slice(1)
-    }
-    return temp
-  })
-
-  const result = list.filter(Boolean).join('/')
-  if (result.startsWith('http')) {
-    return result
-  }
-  return result
-}
-
-/**
  * wait for ms and resolve the promise
  * @param ms
  * @returns {Promise<any>}
@@ -346,16 +317,16 @@ const reporter = (context, options) => {
         if (!ruleOptions.checkRelative) {
           return
         }
-        const filePath = getFilePath()
-        // Treat relative uri as local file path if ruleOptions.baseURI is not provided
-        const base = ruleOptions.baseURI || filePath
+
+        // Input source may be a file, use the filePath as baseURI if ruleOptions.baseURI is not provided
+        const base = ruleOptions.baseURI || getFilePath()
         if (!base) {
           const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
           report(node, new RuleError(message, { padding: locator.range(URIRange) }))
           return
         }
 
-        newURI = joinPath([base, uri])
+        newURI = URL.resolve(base, uri)
       }
     }
 
