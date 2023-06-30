@@ -29,8 +29,16 @@ tester.run('alive-link', rule, {
       ext: '.txt',
     },
     {
-      text: 'should be able to check relative pathes when checkRelative is true: [robot](index.html)',
+      text: 'should be able to check relative paths when checkRelative is true: [robot](index.html)',
       options: {
+        checkRelative: true,
+        baseURI: url => 'https://example.com/' + url,
+      },
+    },
+    {
+      text: 'should be able to check relative paths when checkRelative is true: [robot](index.html)',
+      options: {
+        checkRelative: true,
         baseURI: 'https://example.com/',
       },
     },
@@ -44,6 +52,16 @@ tester.run('alive-link', rule, {
       text: 'should ignore URLs in the "ignore" option that glob formatted: https://example.com/404.html shouldn\'t be checked.',
       options: {
         ignore: ['https://example.com/*'],
+      },
+    },
+    {
+      text: 'should ignore URLs https://deadlink.com/a https://deadlink.com/b https://deadlink.com/c by "ignore" option',
+      options: {
+        ignore: [
+          'https://deadlink.com/a',
+          /deadlink.com\/a/g,
+          uri => uri.startsWith('https://deadlink.com/a'),
+        ],
       },
     },
     {
@@ -202,8 +220,7 @@ tester.run('alive-link', rule, {
       output: 'should preserve hash while redirecting: [BDD](https://mochajs.org/#bdd)',
       errors: [
         {
-          message:
-            'http://mochajs.org/#bdd is redirected to https://mochajs.org/#bdd. (301 Moved Permanently)',
+          message: 'http://mochajs.org/#bdd is redirected to https://mochajs.org/#bdd. (301 Moved Permanently)',
           index: 46,
           line: 1,
           column: 47,
@@ -212,7 +229,7 @@ tester.run('alive-link', rule, {
     },
     {
       text: `Support Reference link[^1] in Markdown.
-             
+
 [^1] https://httpstat.us/404`,
       errors: [
         {

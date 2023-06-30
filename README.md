@@ -74,35 +74,42 @@ The default options are:
   "rules": {
     "alive-link": {
       checkRelative: true, // {boolean} `false` disables the checks for relative URIs.
-      baseURI: null, // {String|null} a base URI to resolve relative URIs. baseURI is required if checkRelative is set true.
-      ignore: [], // {Array<String>} URIs to be skipped from availability checks.
+      baseURI: null, // {string|function} a base URI to resolve relative URIs. If baseURI is a function, baseURI(uri) will be the URL to be checked, Function is only supported by .textlintrc.js.
+      ignore: [], // {string|regExp|function[]} URIs to be skipped from availability checks. RegExp and Function are only supported by .textlintrc.js.
       ignoreRedirects: false, // {boolean} `false` ignores redirect status codes.
-      ignoreStringLinks: false, // {boolean} `false` URI matching in plain text.
-      preferGET: [], // {Array<String>} origins to prefer GET over HEAD.
+      ignoreStringLinks: false, // {boolean} `false` skip URI_REGEXP checking in string.
+      preferGET: [], // {string[]} origins to prefer GET over HEAD.
       retry: 3, // {number} Max retry count
       concurrency: 8, // {number} Concurrency count of linting link [Experimental]
-      interval: 500, // The length of time in milliseconds before the interval count resets. Must be finite. [Experimental]
-      intervalCap: 8, // The max number of runs in the given interval of time. [Experimental]
-      userAgent: 'textlint-rule-alive-link/0.1', // {String} a UserAgent,
-      maxRetryDelay: 10, // (number) The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
-      maxRetryAfterDelay: 10, // (number) The max of waiting seconds for `Retry-After` header.
+      interval: 500, // {number} The length of time in milliseconds before the interval count resets. Must be finite. [Experimental]
+      intervalCap: 8, // {number} The max number of runs in the given interval of time. [Experimental]
+      userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
+      maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
+      maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
     }
   }
 }
 ```
 
-### checkRelative
+### `{boolean}` checkRelative
 
 This rule checks the availability of relative URIs by default.
 You can turn off the checks by passing `false` to this option.
 
-### baseURI
+### `{string|function}` baseURI
 
 The base URI to be used for resolving relative URIs.
 
+#### `{string}` baseURI
 Though its name, you can pass either an URI starting with `http` or `https`, or an file path starting with `/`.
 
 This option uses `URL.resolve(baseURI, relativeURI)` method in node `url` module to join URIs.
+
+#### `{function}` baseURI
+
+This option uses `baseURI(url)` result as the URI to be checked.
+
+**Notice: Only supported in `.textlintrc.js`**
 
 Examples:
 
@@ -126,32 +133,58 @@ Examples:
 }
 
 // markdown content:
-// [file](/path/to/file1)
+// [file](/path/to/file)
 
 // parsed link:
 // /Users/textlint/path/to/parent/folder/path/to/file
 ```
 
-### ignore
+```js
+"alive-link": {
+  "baseURI": url => 'https://example.com/' + url
+}
 
-An array of URIs or [glob](https://github.com/isaacs/node-glob "glob")s to be ignored.
+// markdown content:
+// [page](page.html)
+
+// parsed link:
+// https://example.com/page.html
+```
+
+### `{string|regExp|function[]}` ignore
+
+#### `{string[]}` ignore
+An array of URIs, [glob](https://github.com/isaacs/node-glob "glob")s,  to be ignored.
 These list will be skipped from the availability checks.
 
 The matching method use [minimatch](https://www.npmjs.com/package/minimatch).
+
+#### `{regExp[]}` ignore
+
+URI matching RegExpression, matched URI will be ignored.
+
+**Notice: Only supported in `.textlintrc.js`**
+
+#### `{function[]}` ignore
+
+URI checking function, Boolean should be returned.
+
+**Notice: Only supported in `.textlintrc.js`**
 
 Example:
 
 ```js
 "alive-link": {
   "ignore": [
-    "http://example.com/not-exist/index.html",
-    "http://example.com/*" // glob format
-    "**/api/v1",
+    "http://example.com/not-exist/index.html", // URI string
+    "http://example.com/*" // glob format string
+    /example\.com/g, // regExp
+    uri => uri.startsWith('https://example.com/') // function
   ]
 }
 ```
 
-### preferGET
+### `string[]` preferGET
 
 An array of [origins](https://url.spec.whatwg.org/#origin) to lets the rule connect to the origin's URL by `GET` instead of default `HEAD` request at first time.
 
@@ -165,7 +198,7 @@ Example:
 }
 ```
 
-### ignoreRedirects
+### `{boolean}` ignoreRedirects
 
 This rule checks for redirects (3xx status codes) and considers them an error by default.
 To ignore redirects during checks, set this value to `false`.
@@ -179,7 +212,7 @@ The default concurrency count is `8`.
 
 -->
 
-### ignoreStringLinks
+### `{boolean}` ignoreStringLinks
 
 This rule extracts links from plain text using by default.
 To ignore extracting during checks, set this value to `false`.
@@ -200,7 +233,7 @@ Example:
 // Will check this URL: https://example.com/
 ```
 
-### retry
+### `{number}` retry
 
 This rule checks the URL with retry.
 The default max retry count is `3`.
@@ -211,11 +244,11 @@ Retry request method:
 1. by `Response Headers Allow` parameter if `statusCode` is `405`.
 2. `GET` as alternative.
 
-### userAgent
+### `{string}` userAgent
 
 Customize `User-Agent` http header.
 
-### maxRetryDelay
+### `{number}` maxRetryDelay
 
 The max of waiting seconds for retry. It is related to `retry` option.
 
@@ -223,7 +256,7 @@ The max of waiting seconds for retry. It is related to `retry` option.
 
 Default: `10`
 
-### maxRetryAfterDelay
+### `{number}` maxRetryAfterDelay
 
 The max of allow waiting time second for [`Retry-After`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After) header value.
 

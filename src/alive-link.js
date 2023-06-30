@@ -10,18 +10,18 @@ import PQueue from 'p-queue'
 
 const DEFAULT_OPTIONS = {
   checkRelative: true, // {boolean} `false` disables the checks for relative URIs.
-  baseURI: null, // {String|null} a base URI to resolve relative URIs.
-  ignore: [], // {Array<String>} URIs to be skipped from availability checks.
+  baseURI: null, // {string|function} a base URI to resolve relative URIs. If baseURI is a function, baseURI(uri) will be the URL to be checked, Function is only supported by .textlintrc.js.
+  ignore: [], // {string|regExp|function[]} URIs to be skipped from availability checks. RegExp and Function are only supported by .textlintrc.js.
   ignoreRedirects: false, // {boolean} `false` ignores redirect status codes.
-  ignoreStringLinks: false, // {boolean} `false` skip URI_REGEXP checking in string.
-  preferGET: [], // {Array<String>} origins to prefer GET over HEAD.
+  ignoreStringLinks: false, // {boolean} `false` URI matching in plain text.
+  preferGET: [], // {string[]} origins to prefer GET over HEAD.
   retry: 3, // {number} Max retry count
   concurrency: 8, // {number} Concurrency count of linting link [Experimental]
-  interval: 500, // The length of time in milliseconds before the interval count resets. Must be finite. [Experimental]
-  intervalCap: 8, // The max number of runs in the given interval of time. [Experimental]
-  userAgent: 'textlint-rule-alive-link/0.1', // {String} a UserAgent,
-  maxRetryDelay: 10, // (number) The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
-  maxRetryAfterDelay: 10, // (number) The max of waiting seconds for `Retry-After` header.
+  interval: 500, // {number} The length of time in milliseconds before the interval count resets. Must be finite. [Experimental]
+  intervalCap: 8, // {number} The max number of runs in the given interval of time. [Experimental]
+  userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
+  maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
+  maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
 }
 
 const URI_REGEXP = /(?:https?:)?\/\/(?:www\.)?[-a-z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-\p{L}0-9()@:%_+.~#?&/=]*)/gu
@@ -93,8 +93,25 @@ function isRedirect(code) {
   return STATUS_CODE.REDIRECT.includes(code)
 }
 
+/**
+ * Return `true` if reg is a regExpression
+ * @param reg
+ * @return {boolean}
+ */
+function isRegExp(reg) {
+  return Object.prototype.toString.call(reg) === '[object RegExp]'
+}
+
 function isIgnored(uri, ignore = []) {
-  return ignore.some((pattern) => minimatch(uri, pattern))
+  return ignore.some((pattern) => {
+    if (typeof pattern === 'function') {
+      return pattern(uri)
+    }
+    if (isRegExp(pattern)) {
+      return pattern.test(uri)
+    }
+    return minimatch(uri, pattern)
+  })
 }
 
 /**
@@ -318,15 +335,19 @@ const reporter = (context, options) => {
           return
         }
 
-        // Input source may be a file, use the filePath as baseURI if ruleOptions.baseURI is not provided
-        const base = ruleOptions.baseURI || getFilePath()
-        if (!base) {
-          const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
-          report(node, new RuleError(message, { padding: locator.range(URIRange) }))
-          return
-        }
+        if (typeof ruleOptions.baseURI === 'function') {
+          newURI = ruleOptions.baseURI(uri)
+        } else {
+          // Input source may be a file, use the filePath as baseURI if ruleOptions.baseURI is not provided
+          const base = ruleOptions.baseURI || getFilePath()
+          if (!base) {
+            const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
+            report(node, new RuleError(message, { padding: locator.range(URIRange) }))
+            return
+          }
 
-        newURI = URL.resolve(base, uri)
+          newURI = URL.resolve(base, uri)
+        }
       }
     }
 
