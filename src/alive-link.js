@@ -22,6 +22,7 @@ const DEFAULT_OPTIONS = {
   userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
   maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
   maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
+  timeout: 20 * 1000, // {number} Request timeout (ms), default is 20000ms (20s).
 }
 
 const URI_REGEXP = /(?:https?:)?\/\/(?:www\.)?[-a-z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-\p{L}0-9()@:%_+.~#?&/=]*)/gu
@@ -140,6 +141,7 @@ const createFetchWithRuleDefaults = (ruleOptions) => {
     const { host } = URL.parse(uri)
     return fetch(uri, {
       ...fetchOptions,
+      timeout: ruleOptions.timeout,
       // Disable gzip compression in Node.js
       // to avoid the zlib's "unexpected end of file" error
       // https://github.com/request/request/issues/2045

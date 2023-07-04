@@ -86,6 +86,7 @@ The default options are:
       userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
       maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
       maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
+      timeout: 20 * 1000, // {number} Request timeout (ms), default is 20000ms (20s).
     }
   }
 }
@@ -264,6 +265,12 @@ Some website like GitHub returns `Retry-After` header value with `429 too many r
 This `maxRetryAfterDelay` option is for that `Retry-After`.
 
 Default: `10`
+
+### `{number}` timeout
+
+Request timeout (ms), default is 20000ms (20s).
+
+Default: `20000`
 
 ## Tests
 
