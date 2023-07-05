@@ -9,6 +9,7 @@ import pMemoize from 'p-memoize'
 import PQueue from 'p-queue'
 
 const DEFAULT_OPTIONS = {
+  language: 'en', // {string} 'en': output info in English, set to 'zh' if you want Chinese
   checkRelative: true, // {boolean} `false` disables the checks for relative URIs.
   baseURI: null, // {string|function} a base URI to resolve relative URIs. If baseURI is a function, baseURI(uri) will be the URL to be checked, Function is only supported by .textlintrc.js.
   ignore: [], // {string|regExp|function[]} URIs to be skipped from availability checks. RegExp and Function are only supported by .textlintrc.js.
@@ -22,7 +23,7 @@ const DEFAULT_OPTIONS = {
   userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
   maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
   maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
-  timeout: 20 * 1000, // {number} Request timeout (ms), default is 20000ms (20s).
+  timeout: 20, // {number} Request timeout (s), default is 20s.
 }
 
 const URI_REGEXP = /(?:https?:)?\/\/(?:www\.)?[-a-z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-\p{L}0-9()@:%_+.~#?&/=]*)/gu
@@ -141,7 +142,7 @@ const createFetchWithRuleDefaults = (ruleOptions) => {
     const { host } = URL.parse(uri)
     return fetch(uri, {
       ...fetchOptions,
-      timeout: ruleOptions.timeout,
+      timeout: ruleOptions.timeout * 1000,
       // Disable gzip compression in Node.js
       // to avoid the zlib's "unexpected end of file" error
       // https://github.com/request/request/issues/2045
@@ -301,6 +302,49 @@ async function isAliveLocalFile(filePath) {
   }
 }
 
+const MESSAGE_CODE = {
+  RELATIVE_URI: 1,
+  DEAD_URI: 2,
+  REDIRECT_URI: 3,
+}
+
+const MESSAGE = {
+  [MESSAGE_CODE.RELATIVE_URI]: {
+    en: 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.',
+    zh: '无法解析相对链接。请检查是否正确配置 options.baseURI',
+  },
+  [MESSAGE_CODE.DEAD_URI]: {
+    en: '${uri} is dead. (${message})',
+    zh: '${uri} 是死链接。（${message}）',
+  },
+  [MESSAGE_CODE.REDIRECT_URI]: {
+    en: '${uri} is redirected to ${redirectTo}. (${message})',
+    zh: '${uri} 重定向到了 ${redirectTo}。（${message}）',
+  },
+}
+
+const DEFAULT_MESSAGE = {
+  en: 'Unknown error',
+  zh: '未知错误',
+}
+
+/**
+ * 基于语种等信息取出 lint message
+ * @param {number} code
+ * @param {object|null} data
+ * @param {string} language
+ * @return {string}
+ */
+function getLintMessage({ code, data, language }) {
+  let message = MESSAGE[code] || DEFAULT_MESSAGE
+  if (!data) {
+    return message[language]
+  }
+  return Object.entries(data).reduce((result, [key, value]) => {
+    return result.replace(`\${${key}}`, value)
+  }, message[language])
+}
+
 const reporter = (context, options) => {
   const { Syntax, getSource, report, RuleError, fixer, getFilePath, locator } = context
   const helper = new RuleHelper(context)
@@ -343,8 +387,8 @@ const reporter = (context, options) => {
           // Input source may be a file, use the filePath as baseURI if ruleOptions.baseURI is not provided
           const base = ruleOptions.baseURI || getFilePath()
           if (!base) {
-            const message = 'Unable to resolve the relative URI. Please check if the options.baseURI is correctly specified.'
-            report(node, new RuleError(message, { padding: locator.range(URIRange) }))
+            const lintMessage = getLintMessage({ code: MESSAGE_CODE.RELATIVE_URI, language: ruleOptions.language })
+            report(node, new RuleError(lintMessage, { padding: locator.range(URIRange) }))
             return
           }
 
@@ -372,10 +416,10 @@ const reporter = (context, options) => {
       return
     }
     if (!ok) {
-      const lintMessage = `${uri} is dead. (${message})`
+      const lintMessage = getLintMessage({ code: MESSAGE_CODE.DEAD_URI, data: { uri, message }, language: ruleOptions.language })
       report(node, new RuleError(lintMessage, { padding: locator.range(URIRange) }))
     } else if (redirected) {
-      const lintMessage = `${uri} is redirected to ${redirectTo}. (${message})`
+      const lintMessage = getLintMessage({ code: MESSAGE_CODE.REDIRECT_URI, data: { uri, redirectTo, message }, language: ruleOptions.language })
       // Replace the old URI with redirected URI
       const fix = redirectTo ? fixer.replaceTextRange(URIRange, redirectTo) : undefined
       report(node, new RuleError(lintMessage, { fix, padding: locator.range(URIRange) }))

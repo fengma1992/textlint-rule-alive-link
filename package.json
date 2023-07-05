@@ -12,7 +12,8 @@
   "homepage": "https://github.com/fengma1992/textlint-rule-alive-link",
   "main": "lib/alive-link.js",
   "files": [
-    "lib"
+    "lib",
+    "docs"
   ],
   "scripts": {
     "build": "textlint-scripts build",

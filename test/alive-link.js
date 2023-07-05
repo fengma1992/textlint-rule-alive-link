@@ -247,5 +247,47 @@ tester.run('alive-link', rule, {
         },
       ],
     },
+    {
+      text: 'should throw when a relative URI cannot be resolved: [test](./a.md).',
+      options: {
+        language: 'zh',
+      },
+      errors: [
+        {
+          message: '无法解析相对链接。请检查是否正确配置 options.baseURI',
+          line: 1,
+          column: 61,
+        },
+      ],
+    },
+    {
+      text: 'should locate the exact index of a URL in a plain text: https://httpstat.us/404',
+      ext: '.txt',
+      options: {
+        language: 'zh',
+      },
+      errors: [
+        {
+          message: 'https://httpstat.us/404 是死链接。（404 Not Found）',
+          line: 1,
+          column: 57,
+        },
+      ],
+    },
+    {
+      text: 'should preserve hash while redirecting: [BDD](http://mochajs.org/#bdd)',
+      output: 'should preserve hash while redirecting: [BDD](https://mochajs.org/#bdd)',
+      options: {
+        language: 'zh',
+      },
+      errors: [
+        {
+          message: 'http://mochajs.org/#bdd 重定向到了 https://mochajs.org/#bdd。（301 Moved Permanently）',
+          index: 46,
+          line: 1,
+          column: 47,
+        },
+      ],
+    },
   ],
 })

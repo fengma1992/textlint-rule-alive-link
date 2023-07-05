@@ -4,8 +4,9 @@
 [![npm](https://img.shields.io/npm/v/textlint-rule-alive-link.svg)](https://www.npmjs.com/package/textlint-rule-alive-link)
 [![test](https://github.com/fengma1992/textlint-rule-alive-link/actions/workflows/test.yml/badge.svg)](https://github.com/fengma1992/textlint-rule-alive-link/actions/workflows/test.yml)
 
-[textlint](https://github.com/textlint/textlint) rule
-to make sure every link in a document is available.
+[中文版 README](./docs/README_ZH.md)
+
+[textlint](https://github.com/textlint/textlint) rule to make sure every link in a document is available.
 
 The targets of this rule is Markdown documents and plain text documents (See tests).
 
@@ -41,7 +42,7 @@ Shows an error if an image link is dead (i.e. its server returns one of the ["no
 
 Shows an error if a link is obsolete or moved to another location (i.e. its server returns one of the ["redirect" responses](https://fetch.spec.whatwg.org/#redirect-status)).
 
-This error is fixable and textlint will automatically replace the obsolete links with their new ones if you run it with `--fix` option.
+This error is fixable and `textlint` will automatically replace the obsolete links with their new ones if you run it with `--fix` option.
 
 ### Relative Link Resolution
 
@@ -65,7 +66,7 @@ URI RegExpression this rule using is:
 
 ## Options
 
-Please write your configurations in `.textlintrc`.
+Please write your configurations in `.textlintrc`, `.textlintrc.js` is recommended.
 
 The default options are:
 
@@ -73,6 +74,7 @@ The default options are:
 {
   "rules": {
     "alive-link": {
+      language: 'en', // {string} 'en' outputs info in English, set to 'zh' if you want Chinese
       checkRelative: true, // {boolean} `false` disables the checks for relative URIs.
       baseURI: null, // {string|function} a base URI to resolve relative URIs. If baseURI is a function, baseURI(uri) will be the URL to be checked, Function is only supported by .textlintrc.js.
       ignore: [], // {string|regExp|function[]} URIs to be skipped from availability checks. RegExp and Function are only supported by .textlintrc.js.
@@ -86,11 +88,16 @@ The default options are:
       userAgent: 'textlint-rule-alive-link/0.1', // {string} a UserAgent,
       maxRetryDelay: 10, // {number} The max of waiting seconds for retry. It is related to `retry` option. It does affect to `Retry-After` header.
       maxRetryAfterDelay: 10, // {number} The max of waiting seconds for `Retry-After` header.
-      timeout: 20 * 1000, // {number} Request timeout (ms), default is 20000ms (20s).
+      timeout: 20, // {number} Request timeout, default is 20s.
     }
   }
 }
 ```
+
+### `{string}` language
+
+This rule outputs error info in English by default (`language: 'en'`).
+You can change to Chinese by passing `'zh'` to this option.
 
 ### `{boolean}` checkRelative
 
@@ -102,11 +109,15 @@ You can turn off the checks by passing `false` to this option.
 The base URI to be used for resolving relative URIs.
 
 #### `{string}` baseURI
+
+`string` type `baseURI`.
 Though its name, you can pass either an URI starting with `http` or `https`, or an file path starting with `/`.
 
 This option uses `URL.resolve(baseURI, relativeURI)` method in node `url` module to join URIs.
 
 #### `{function}` baseURI
+
+`function` type `baseURI`.
 
 This option uses `baseURI(url)` result as the URI to be checked.
 
@@ -119,11 +130,11 @@ Examples:
   "baseURI": "https://example.com/path/"
 }
 
-// markdown content:
+// Markdown content:
 // [page1](/sub1/to/page1)
 // [page2](sub2/to/page2)
 
-// parsed link:
+// Parsed link:
 // https://example.com/sub1/to/page1
 // https://example.com/path/sub2/to/page2
 ```
@@ -133,10 +144,10 @@ Examples:
   "baseURI": "/Users/textlint/path/to/parent/folder/"
 }
 
-// markdown content:
+// Markdown content:
 // [file](/path/to/file)
 
-// parsed link:
+// Parsed link:
 // /Users/textlint/path/to/parent/folder/path/to/file
 ```
 
@@ -145,16 +156,19 @@ Examples:
   "baseURI": url => 'https://example.com/' + url
 }
 
-// markdown content:
+// Markdown content:
 // [page](page.html)
 
-// parsed link:
+// Parsed link:
 // https://example.com/page.html
 ```
 
 ### `{string|regExp|function[]}` ignore
 
 #### `{string[]}` ignore
+
+`string` type config in `ignore` option array. 
+
 An array of URIs, [glob](https://github.com/isaacs/node-glob "glob")s,  to be ignored.
 These list will be skipped from the availability checks.
 
@@ -162,13 +176,17 @@ The matching method use [minimatch](https://www.npmjs.com/package/minimatch).
 
 #### `{regExp[]}` ignore
 
+`regExp` type config in `ignore` option array.
+
 URI matching RegExpression, matched URI will be ignored.
 
 **Notice: Only supported in `.textlintrc.js`**
 
 #### `{function[]}` ignore
 
-URI checking function, Boolean should be returned.
+`function` type config in `ignore` option array.
+
+URI checking function, URI will be the function param and Boolean should be returned.
 
 **Notice: Only supported in `.textlintrc.js`**
 
@@ -268,9 +286,9 @@ Default: `10`
 
 ### `{number}` timeout
 
-Request timeout (ms), default is 20000ms (20s).
+Request timeout (seconds).
 
-Default: `20000`
+Default: `20`
 
 ## Tests
 
