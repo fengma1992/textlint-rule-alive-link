@@ -4,7 +4,7 @@
 [![npm](https://img.shields.io/npm/v/textlint-rule-alive-link.svg)](https://www.npmjs.com/package/textlint-rule-alive-link)
 [![test](https://github.com/fengma1992/textlint-rule-alive-link/actions/workflows/test.yml/badge.svg)](https://github.com/fengma1992/textlint-rule-alive-link/actions/workflows/test.yml)
 
-[中文版 README](./docs/README_ZH.md)
+[中文版 README](https://github.com/fengma1992/textlint-rule-alive-link/blob/master/docs/README_ZH.md)
 
 [textlint](https://github.com/textlint/textlint) rule to make sure every link in a document is available.
 
