@@ -104,16 +104,8 @@ function isRegExp(reg) {
   return Object.prototype.toString.call(reg) === '[object RegExp]'
 }
 
-function isIgnored(uri, ignore = []) {
-  return ignore.some((pattern) => {
-    if (typeof pattern === 'function') {
-      return pattern(uri)
-    }
-    if (isRegExp(pattern)) {
-      return pattern.test(uri)
-    }
-    return minimatch(uri, pattern)
-  })
+function isIgnored(uri, ignoreFuncs) {
+  return ignoreFuncs.some(ignoreFunc => ignoreFunc(uri))
 }
 
 /**
@@ -351,6 +343,19 @@ const reporter = (context, options) => {
   const ruleOptions = { ...DEFAULT_OPTIONS, ...options }
   // format preferGET list to ensure URI string is origin
   ruleOptions.preferGET = ruleOptions.preferGET.map((origin) => getURLOrigin(origin))
+  // transform ignore patterns to function
+  ruleOptions.ignoreFuncs = (ruleOptions.ignore || []).map(pattern => {
+    if (typeof pattern === 'function') {
+      return pattern
+    } else if (isRegExp(pattern)) {
+      return uri => {
+        // reset reg index on every test to avoid global pattern
+        pattern.lastIndex = 0
+        return pattern.test(uri)
+      }
+    }
+    return uri => minimatch(uri, pattern)
+  })
   const isAliveURI = createCheckAliveURL(ruleOptions)
   // 30sec memorized
   const memorizedIsAliveURI = pMemoize(isAliveURI, {
@@ -365,7 +370,7 @@ const reporter = (context, options) => {
    * @param {number} maxRetryCount retry count of linting
    */
   const lint = async ({ node, uri, index }, maxRetryCount) => {
-    if (isIgnored(uri, ruleOptions.ignore)) {
+    if (isIgnored(uri, ruleOptions.ignoreFuncs)) {
       return
     }
     const URIRange = [index, index + uri.length]
